@@ -452,7 +452,7 @@ function GroupDetail() {
                                 )}
                                 <button
                                   onClick={() => handleDeleteExpense(expense.id)}
-                                  className="opacity-0 group-hover:opacity-100 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-50 text-muted-foreground hover:text-red-500 transition-all shrink-0"
+                                  className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-50 text-muted-foreground hover:text-red-500 transition-all shrink-0"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
                                 </button>

@@ -265,7 +265,7 @@ function IndividualExpenses() {
                         {/* Edit button */}
                         <button
                           onClick={() => setEditingExpense(expense)}
-                          className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground opacity-0 transition-all hover:bg-blue-50 hover:text-blue-500 group-hover:opacity-100"
+                          className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground opacity-100 sm:opacity-0 transition-all hover:bg-blue-50 hover:text-blue-500 sm:group-hover:opacity-100"
                           id={`edit-expense-${expense.id}`}
                           title="Edit expense"
                         >
@@ -274,7 +274,7 @@ function IndividualExpenses() {
                         {/* Delete button */}
                         <button
                           onClick={() => handleDelete(expense.id)}
-                          className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground opacity-0 transition-all hover:bg-red-50 hover:text-red-500 group-hover:opacity-100"
+                          className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground opacity-100 sm:opacity-0 transition-all hover:bg-red-50 hover:text-red-500 sm:group-hover:opacity-100"
                           id={`delete-expense-${expense.id}`}
                         >
                           <Trash2 className="h-3.5 w-3.5" />
