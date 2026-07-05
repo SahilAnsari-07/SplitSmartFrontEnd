@@ -1,11 +1,14 @@
+import React, { Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import AuthPage from './components/AuthPages/AuthPage';
-import DashBoard from './components/DashBoard/DashBoard';
-import Overview from './components/Overview/Overview';
-import IndividualExpenses from './components/Expenses/IndividualExpenses';
-import GroupList from './components/Groups/GroupList';
-import GroupDetail from './components/Groups/GroupDetail';
+import Loader from './components/Loader';
+
+const AuthPage = React.lazy(() => import('./components/AuthPages/AuthPage'));
+const DashBoard = React.lazy(() => import('./components/DashBoard/DashBoard'));
+const Overview = React.lazy(() => import('./components/Overview/Overview'));
+const IndividualExpenses = React.lazy(() => import('./components/Expenses/IndividualExpenses'));
+const GroupList = React.lazy(() => import('./components/Groups/GroupList'));
+const GroupDetail = React.lazy(() => import('./components/Groups/GroupDetail'));
 
 function ProtectedRoute({ children }) {
   const { status } = useSelector((state) => state.auth);
@@ -22,35 +25,37 @@ function PublicRoute({ children }) {
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        {/* Public */}
-        <Route
-          path="/login"
-          element={
-            <PublicRoute>
-              <AuthPage />
-            </PublicRoute>
-          }
-        />
+      <Suspense fallback={<Loader text="Loading..." />}>
+        <Routes>
+          {/* Public */}
+          <Route
+            path="/login"
+            element={
+              <PublicRoute>
+                <AuthPage />
+              </PublicRoute>
+            }
+          />
 
-        {/* Protected — Dashboard layout with nested pages */}
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <DashBoard />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<Overview />} />
-          <Route path="expenses" element={<IndividualExpenses />} />
-          <Route path="groups" element={<GroupList />} />
-          <Route path="groups/:groupId" element={<GroupDetail />} />
-        </Route>
+          {/* Protected — Dashboard layout with nested pages */}
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <DashBoard />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Overview />} />
+            <Route path="expenses" element={<IndividualExpenses />} />
+            <Route path="groups" element={<GroupList />} />
+            <Route path="groups/:groupId" element={<GroupDetail />} />
+          </Route>
 
-        {/* Catch-all */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          {/* Catch-all */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }
