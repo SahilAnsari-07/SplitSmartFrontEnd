@@ -14,6 +14,7 @@ import {
 } from "../../utils/constants";
 import Card from "../Card";
 import Loader from "../Loader";
+import { Skeleton, ExpenseSkeleton } from "../Skeleton";
 
 function Overview() {
   const currentUser = useSelector((state) => state.auth.userData);
@@ -74,7 +75,32 @@ function Overview() {
     (expLoading && expenses.length === 0) ||
     (grpLoading && groups.length === 0)
   ) {
-    return <Loader text="Loading overview..." />;
+    return (
+      <div className="min-h-screen bg-background pb-20">
+        <div className="bg-primary pt-12 pb-24 px-6 relative">
+          <div className="animate-pulse bg-white/20 h-6 w-8 rounded-lg mb-6"></div>
+          <div className="flex items-center gap-4">
+            <div className="animate-pulse bg-white/20 w-16 h-16 rounded-2xl"></div>
+            <div className="space-y-2">
+              <div className="animate-pulse bg-white/20 h-8 w-48 rounded-lg"></div>
+              <div className="animate-pulse bg-white/20 h-4 w-32 rounded-lg"></div>
+            </div>
+          </div>
+        </div>
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 -mt-16 relative z-10">
+          <div className="bg-card rounded-2xl sm:rounded-3xl shadow-xl border border-border p-4 mb-6">
+            <div className="flex gap-2">
+              <div className="animate-pulse bg-muted h-10 flex-1 rounded-xl"></div>
+              <div className="animate-pulse bg-muted h-10 flex-1 rounded-xl"></div>
+            </div>
+          </div>
+          <div className="space-y-4">
+            <ExpenseSkeleton />
+            <ExpenseSkeleton />
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const firstName = currentUser?.name?.split(" ")[0] || "there";
