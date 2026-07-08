@@ -105,12 +105,16 @@ export const apiSlice = createApi({
         { type: "GroupDetail", id: groupId },
       ],
     }),
+    // Fix #10: Also invalidate GroupDetail so stale cached detail is cleared
     deleteGroup: builder.mutation({
       query: (groupId) => ({
         url: `groups/${groupId}`,
         method: "DELETE",
       }),
-      invalidatesTags: ["Groups"],
+      invalidatesTags: (_result, _error, groupId) => [
+        "Groups",
+        { type: "GroupDetail", id: groupId },
+      ],
     }),
     getSharedExpenses: builder.query({
       query: (groupId) => `groups/${groupId}/expenses`,
@@ -139,6 +143,7 @@ export const apiSlice = createApi({
         { type: "SharedExpenses", id: groupId },
       ],
     }),
+    // Fix #9: Also invalidate Groups so balance-summary refreshes after settlement
     createSettlement: builder.mutation({
       query: ({ groupId, body }) => ({
         url: `groups/${groupId}/settlements`,
@@ -146,17 +151,22 @@ export const apiSlice = createApi({
         body,
       }),
       invalidatesTags: (_result, _error, { groupId }) => [
+        "Groups",
         { type: "GroupDetail", id: groupId },
       ],
     }),
+    // Fix #8: Only invalidate the specific group, not all GroupDetail caches
     linkUser: builder.mutation({
-      query: (body) => ({
+      query: ({ memberId, email }) => ({
         url: "group-members/link-user",
         method: "POST",
-        body,
+        body: { memberId, email },
         responseHandler: (response) => response.text(),
       }),
-      invalidatesTags: ["Groups", "GroupDetail"],
+      invalidatesTags: (_result, _error, { groupId }) => [
+        "Groups",
+        ...(groupId ? [{ type: "GroupDetail", id: groupId }] : []),
+      ],
     }),
   }),
 });

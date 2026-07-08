@@ -20,13 +20,29 @@ export function formatAmount(amount) {
   return `₹${Number(amount).toLocaleString('en-IN')}`;
 }
 
+// Fix #6: Cache today/yesterday strings to avoid creating 3 Date objects per call
+let _cachedDay = -1;
+let _todayStr = '';
+let _yesterdayStr = '';
+
+function refreshDayCache() {
+  const now = new Date();
+  const day = now.getDate();
+  if (day !== _cachedDay) {
+    _cachedDay = day;
+    _todayStr = now.toDateString();
+    const yesterday = new Date(now);
+    yesterday.setDate(day - 1);
+    _yesterdayStr = yesterday.toDateString();
+  }
+}
+
 export function formatDate(dateStr) {
+  refreshDayCache();
   const date = new Date(dateStr + 'T00:00:00');
-  const today = new Date();
-  const yesterday = new Date(today);
-  yesterday.setDate(today.getDate() - 1);
-  if (date.toDateString() === today.toDateString()) return 'Today';
-  if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
+  const ds = date.toDateString();
+  if (ds === _todayStr) return 'Today';
+  if (ds === _yesterdayStr) return 'Yesterday';
   return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 }
 

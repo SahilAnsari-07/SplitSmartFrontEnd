@@ -1,4 +1,6 @@
-function Button({
+import React from 'react';
+
+const Button = React.memo(function Button({
   children,
   variant = 'primary',
   size = 'md',
@@ -32,6 +34,6 @@ function Button({
       {children}
     </button>
   );
-}
+});
 
 export default Button;

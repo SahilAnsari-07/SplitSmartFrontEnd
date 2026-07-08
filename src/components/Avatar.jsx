@@ -1,6 +1,7 @@
+import React from 'react';
 import { getInitials, getAvatarColor } from '../utils/constants';
 
-function Avatar({ name, size = 'md', className = '' }) {
+const Avatar = React.memo(function Avatar({ name, size = 'md', className = '' }) {
   const color = getAvatarColor(name);
   const initials = getInitials(name);
 
@@ -20,6 +21,6 @@ function Avatar({ name, size = 'md', className = '' }) {
       {initials}
     </div>
   );
-}
+});
 
 export default Avatar;

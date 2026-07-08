@@ -22,8 +22,11 @@ function Overview() {
   const { data: groups = [], isLoading: grpLoading } = useGetGroupsQuery();
   const { data: balanceSummary } = useGetBalanceSummaryQuery();
 
-  const currentMonth = new Date().getMonth();
-  const currentYear = new Date().getFullYear();
+  // Fix #7 & #18: Single Date, memoized so it's stable across renders
+  const { currentMonth, currentYear } = useMemo(() => {
+    const now = new Date();
+    return { currentMonth: now.getMonth(), currentYear: now.getFullYear() };
+  }, []);
 
   const totalOwed = balanceSummary?.totalOwed || 0;
   const totalOwe = balanceSummary?.totalOwe || 0;

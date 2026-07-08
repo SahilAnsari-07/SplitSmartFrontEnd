@@ -104,8 +104,12 @@ function IndividualExpenses() {
     );
   }, [filtered]);
 
-  const handleAdd = (data) => {
-    createExpense(data);
+  const handleAdd = async (data) => {
+    try {
+      await createExpense(data).unwrap();
+    } catch (e) {
+      console.error("Failed to add expense", e);
+    }
   };
 
   const [deletingId, setDeletingId] = useState(null);

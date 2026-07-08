@@ -5,11 +5,6 @@ import {
   ArrowLeft,
   HandCoins,
   Plus,
-  TrendingDown,
-  TrendingUp,
-  Trash2,
-  Link,
-  User,
   UserPlus,
 } from "lucide-react";
 import {
@@ -22,19 +17,21 @@ import {
 } from "../../store/apiSlice";
 import {
   formatAmount,
-  formatDate,
-  getAvatarColor,
-  getCategoryInfo,
-  getInitials,
 } from "../../utils/constants";
 import AddSharedExpenseModal from "./AddSharedExpenseModal";
 import SettleUpModal from "./SettleUpModal";
 import LinkUserModal from "./LinkUserModal";
+import GroupExpensesTab from "./GroupExpensesTab";
+import GroupBalancesTab from "./GroupBalancesTab";
 import Button from "../Button";
 import Card from "../Card";
 import EmptyState from "../EmptyState";
-import Loader from "../Loader";
-import { Skeleton, ExpenseSkeleton } from "../Skeleton";
+import { ExpenseSkeleton } from "../Skeleton";
+
+// Fix #15: Static style constants for balance card color
+const BALANCE_SETTLED_COLOR = "#0f172a";
+const BALANCE_POSITIVE_COLOR = "#10b981";
+const BALANCE_NEGATIVE_COLOR = "#f43f5e";
 
 function GroupDetail() {
   const { groupId } = useParams();
@@ -156,9 +153,12 @@ function GroupDetail() {
     return simplified;
   }, [balances]);
 
-  const myBalance = balances.find(
-    (balance) => balance.memberId === myMemberId,
+  // Fix #5: memoize myBalance instead of recalculating on every render
+  const myBalance = useMemo(
+    () => balances.find((balance) => balance.memberId === myMemberId),
+    [balances, myMemberId],
   );
+
   const totalSpend = useMemo(
     () => sharedExpenses.reduce((sum, expense) => sum + expense.amount, 0),
     [sharedExpenses],
@@ -196,8 +196,9 @@ function GroupDetail() {
     setShowLinkUser(true);
   };
 
+  // Fix #8: Pass groupId so linkUser mutation invalidates only this group's cache
   const handleLinkUserSubmit = async (memberId, email) => {
-    await linkUserMutation({ memberId, email }).unwrap();
+    await linkUserMutation({ memberId, email, groupId }).unwrap();
   };
 
   const handleAddMember = async (e) => {
@@ -231,6 +232,19 @@ function GroupDetail() {
       },
     }).unwrap();
   };
+
+  // Fix #15: Compute balance card color once
+  const balanceColor = !myBalance || Math.abs(myBalance.netBalance) < 0.5
+    ? BALANCE_SETTLED_COLOR
+    : myBalance.netBalance > 0
+      ? BALANCE_POSITIVE_COLOR
+      : BALANCE_NEGATIVE_COLOR;
+
+  const balanceText = !myBalance || Math.abs(myBalance.netBalance) < 0.5
+    ? "Settled"
+    : myBalance.netBalance > 0
+      ? `+${formatAmount(myBalance.netBalance)}`
+      : `-${formatAmount(Math.abs(myBalance.netBalance))}`;
 
   if ((isLoading || isFetching) && !group) {
     return (
@@ -306,22 +320,10 @@ function GroupDetail() {
         <Card className="p-3.5 text-center">
           <p className="text-muted-foreground text-[0.7rem]">Your Balance</p>
           <p
-            className="mt-0.5 font-bold"
-            style={{
-              fontSize: "1rem",
-              color:
-                !myBalance || Math.abs(myBalance.netBalance) < 0.5
-                  ? "#0f172a"
-                  : myBalance.netBalance > 0
-                    ? "#10b981"
-                    : "#f43f5e",
-            }}
+            className="mt-0.5 font-bold text-base"
+            style={{ color: balanceColor }}
           >
-            {!myBalance || Math.abs(myBalance.netBalance) < 0.5
-              ? "Settled"
-              : myBalance.netBalance > 0
-                ? `+${formatAmount(myBalance.netBalance)}`
-                : `-${formatAmount(Math.abs(myBalance.netBalance))}`}
+            {balanceText}
           </p>
         </Card>
         <Card className="p-3.5 text-center">
@@ -333,8 +335,7 @@ function GroupDetail() {
       {debts.length > 0 && (
         <button
           onClick={() => setShowSettle(true)}
-          className="w-full flex items-center justify-center gap-2 py-3.5 bg-green-500 text-white rounded-xl hover:bg-green-600 transition mb-5 shadow-sm"
-          style={{ fontWeight: 600 }}
+          className="w-full flex items-center justify-center gap-2 py-3.5 bg-green-500 text-white rounded-xl hover:bg-green-600 transition mb-5 shadow-sm font-semibold"
         >
           <HandCoins className="w-5 h-5" />
           Settle Up
@@ -371,301 +372,23 @@ function GroupDetail() {
               }
             />
           ) : (
-            <div className="space-y-5">
-              {groupedExpenses.map(([date, expenses]) => (
-                <div key={date}>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-muted-foreground text-xs font-semibold uppercase tracking-wide">
-                      {formatDate(date)}
-                    </span>
-                    <span className="text-muted-foreground text-xs">
-                      {formatAmount(
-                        expenses.reduce(
-                          (sum, expense) => sum + expense.amount,
-                          0,
-                        ),
-                      )}
-                    </span>
-                  </div>
-                  <div className="bg-card rounded-2xl border border-border overflow-hidden">
-                    {expenses.map((expense, index) => {
-                      const category = getCategoryInfo(expense.category);
-                      const splitCount = expense.splitBetween?.length || 1;
-                      const myShare = expense.amount / splitCount;
-                      const iPaid = expense.paidById === myMemberId;
-                      const iParticipate = (expense.splitBetween || []).includes(myMemberId);
-
-                      return (
-                        <div
-                          key={expense.id}
-                          className={`flex items-start gap-4 p-4 hover:bg-muted/40 transition group ${
-                            index < expenses.length - 1
-                              ? "border-b border-border"
-                              : ""
-                          }`}
-                        >
-                          <div
-                            className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
-                            style={{ background: category.bg }}
-                          >
-                            <span className="text-xl">{category.emoji}</span>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="min-w-0">
-                                <p className="text-foreground truncate font-medium">
-                                  {expense.title}
-                                </p>
-                                <p className="text-muted-foreground text-xs">
-                                  {iPaid ? "You paid" : `${expense.paidByName || "Someone"} paid`} ·{" "}
-                                  {formatAmount(expense.amount)}
-                                </p>
-                                <p className="text-muted-foreground text-[0.75rem]">
-                                  Split {splitCount} ways
-                                </p>
-                              </div>
-                              <div className="flex items-center gap-2 shrink-0">
-                                {/* Color-coded balance indicator */}
-                                {iParticipate && (
-                                  <div className="text-right">
-                                    {iPaid ? (
-                                      <>
-                                        <p
-                                          style={{
-                                            fontSize: "0.75rem",
-                                            color: "#10b981",
-                                            fontWeight: 600,
-                                          }}
-                                        >
-                                          you lent
-                                        </p>
-                                        <p
-                                          style={{
-                                            fontWeight: 700,
-                                            color: "#10b981",
-                                          }}
-                                        >
-                                          +{formatAmount(expense.amount - myShare)}
-                                        </p>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <p
-                                          style={{
-                                            fontSize: "0.75rem",
-                                            color: "#f43f5e",
-                                            fontWeight: 600,
-                                          }}
-                                        >
-                                          your share
-                                        </p>
-                                        <p
-                                          style={{
-                                            fontWeight: 700,
-                                            color: "#f43f5e",
-                                          }}
-                                        >
-                                          -{formatAmount(myShare)}
-                                        </p>
-                                      </>
-                                    )}
-                                  </div>
-                                )}
-                                <button
-                                  onClick={() => handleDeleteExpense(expense.id)}
-                                  className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-50 text-muted-foreground hover:text-red-500 transition-all shrink-0"
-                                  disabled={deletingId === expense.id}
-                                >
-                                  {deletingId === expense.id ? (
-                                    <div className="w-3.5 h-3.5 border-2 border-muted-foreground border-t-red-500 rounded-full animate-spin" />
-                                  ) : (
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  )}
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
+            <GroupExpensesTab
+              groupedExpenses={groupedExpenses}
+              myMemberId={myMemberId}
+              deletingId={deletingId}
+              onDeleteExpense={handleDeleteExpense}
+            />
           )}
         </>
       )}
 
       {activeTab === "balances" && (
-        <div className="space-y-4">
-          <Card className="overflow-hidden">
-            <div className="px-4 py-3 border-b border-border">
-              <p className="text-muted-foreground text-xs font-semibold">
-                MEMBER BALANCES
-              </p>
-            </div>
-            {balances.map((balance, index) => (
-              <div
-                key={balance.memberId}
-                className={`flex items-center gap-3 p-4 ${
-                  index < balances.length - 1 ? "border-b border-border" : ""
-                }`}
-              >
-                <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center text-white shrink-0"
-                  style={{
-                    background: getAvatarColor(balance.memberName),
-                    fontSize: "0.8rem",
-                    fontWeight: 700,
-                  }}
-                >
-                  {getInitials(
-                    balance.memberId === myMemberId
-                      ? "You"
-                      : balance.memberName,
-                  )}
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p
-                      className="text-foreground"
-                      style={{ fontWeight: 500, fontSize: "0.9rem" }}
-                    >
-                      {balance.memberId === myMemberId
-                        ? "You"
-                        : balance.memberName}
-                    </p>
-                    {balance.linkedUserId ? (
-                      <span className="px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground text-[0.75rem] font-medium">
-                        Linked
-                      </span>
-                    ) : (
-
-                    <button onClick={() => handleLinkUser(balance.memberId)}>
-                      <span  className="px-2 py-0.5 flex rounded-full bg-gray-100 text-gray-600 text-[0.65rem] font-medium">
-                        Link User
-                        <Link className="w-3 h-3 ml-0.5 mt-0.5" />
-                      </span>
-                      </button>)}
-                  </div>
-                  <p
-                    className="text-muted-foreground"
-                    style={{ fontSize: "0.75rem" }}
-                  >
-                    {Math.abs(balance.netBalance) < 0.5
-                      ? "All settled up"
-                      : balance.netBalance > 0
-                        ? "is owed money"
-                        : "owes money"}
-                  </p>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  {Math.abs(balance.netBalance) >= 0.5 &&
-                    (balance.netBalance > 0 ? (
-                      <TrendingUp className="w-4 h-4 text-green-500" />
-                    ) : (
-                      <TrendingDown className="w-4 h-4 text-red-500" />
-                    ))}
-                  <span
-                    style={{
-                      fontWeight: 700,
-                      fontSize: "0.95rem",
-                      color:
-                        Math.abs(balance.netBalance) < 0.5
-                          ? "#64748b"
-                          : balance.netBalance > 0
-                            ? "#10b981"
-                            : "#f43f5e",
-                    }}
-                  >
-                    {Math.abs(balance.netBalance) < 0.5
-                      ? "₹0"
-                      : balance.netBalance > 0
-                        ? `+${formatAmount(balance.netBalance)}`
-                        : `-${formatAmount(Math.abs(balance.netBalance))}`}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </Card>
-
-          {debts.length > 0 ? (
-            <Card className="overflow-hidden">
-              <div className="px-4 py-3 border-b border-border">
-                <p className="text-muted-foreground text-xs font-semibold">
-                  SIMPLIFIED DEBTS
-                </p>
-              </div>
-              {debts.map((debt, index) => (
-                <div
-                  key={`${debt.fromId}-${debt.toId}`}
-                  className={`flex items-center gap-3 p-4 ${
-                    index < debts.length - 1 ? "border-b border-border" : ""
-                  }`}
-                >
-                  <div
-                    className="w-9 h-9 rounded-full flex items-center justify-center text-white shrink-0"
-                    style={{
-                      background: getAvatarColor(debt.fromName),
-                      fontSize: "0.75rem",
-                      fontWeight: 700,
-                    }}
-                  >
-                    {getInitials(
-                      debt.fromId === myMemberId ? "You" : debt.fromName,
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p
-                      className="text-foreground"
-                      style={{ fontSize: "0.875rem", fontWeight: 500 }}
-                    >
-                      <span
-                        style={{
-                          color:
-                            debt.fromId === myMemberId
-                              ? "#f43f5e"
-                              : "inherit",
-                        }}
-                      >
-                        {debt.fromId === myMemberId
-                          ? "You"
-                          : debt.fromName}
-                      </span>
-                      <span className="text-muted-foreground mx-1.5">owes</span>
-                      <span
-                        style={{
-                          color:
-                            debt.toId === myMemberId
-                              ? "#10b981"
-                              : "inherit",
-                        }}
-                      >
-                        {debt.toId === myMemberId ? "you" : debt.toName}
-                      </span>
-                    </p>
-                  </div>
-                  <span style={{ fontWeight: 700, color: "#0f172a" }}>
-                    {formatAmount(debt.amount)}
-                  </span>
-                </div>
-              ))}
-            </Card>
-          ) : (
-            <div className="bg-green-50 rounded-2xl border border-green-200 p-6 text-center">
-              <p style={{ fontSize: "1.5rem", marginBottom: "0.5rem" }}>🎉</p>
-              <p className="text-green-700" style={{ fontWeight: 600 }}>
-                All settled up!
-              </p>
-              <p
-                className="text-green-600 mt-1"
-                style={{ fontSize: "0.875rem" }}
-              >
-                No outstanding debts in this group
-              </p>
-            </div>
-          )}
-        </div>
+        <GroupBalancesTab
+          balances={balances}
+          debts={debts}
+          myMemberId={myMemberId}
+          onLinkUser={handleLinkUser}
+        />
       )}
 
       {showAddMemberForm ? (

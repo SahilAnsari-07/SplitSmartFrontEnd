@@ -1,4 +1,6 @@
-function EmptyState({ emoji, title, description, action }) {
+import React from 'react';
+
+const EmptyState = React.memo(function EmptyState({ emoji, title, description, action }) {
   return (
     <div className="bg-card rounded-2xl border border-border p-12 text-center">
       <p className="text-4xl mb-4">{emoji}</p>
@@ -7,6 +9,6 @@ function EmptyState({ emoji, title, description, action }) {
       {action && <div className="mt-4">{action}</div>}
     </div>
   );
-}
+});
 
 export default EmptyState;
