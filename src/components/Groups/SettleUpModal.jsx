@@ -9,6 +9,7 @@ import {
 function SettleUpModal({ group, debts, currentUserId, onSettle, onClose }) {
   const [pendingKey, setPendingKey] = useState("");
   const [settleAmounts, setSettleAmounts] = useState({});
+  const [error, setError] = useState("");
 
   useEffect(() => {
     setSettleAmounts(
@@ -22,14 +23,22 @@ function SettleUpModal({ group, debts, currentUserId, onSettle, onClose }) {
   const handleSettle = async (debt) => {
     const key = `${debt.fromId}-${debt.toId}`;
     const amount = Number(settleAmounts[key] ?? debt.amount);
+    
+    setError(""); // clear previous errors
 
     if (!Number.isFinite(amount) || amount <= 0) {
+      setError("Please enter a valid amount.");
+      return;
+    }
+    
+    if (amount > debt.amount) {
+      setError(`Cannot settle more than the owed amount (₹${debt.amount}).`);
       return;
     }
 
     setPendingKey(key);
     try {
-      await onSettle({ ...debt, amount: Math.min(amount, debt.amount) });
+      await onSettle({ ...debt, amount });
     } finally {
       setPendingKey("");
     }
@@ -80,6 +89,13 @@ function SettleUpModal({ group, debts, currentUserId, onSettle, onClose }) {
               >
                 Settle the full amount or enter a partial payment.
               </p>
+              
+              {error && (
+                <div className="px-4 py-3 mb-4 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm">
+                  {error}
+                </div>
+              )}
+              
               {debts.map((debt) => {
                 const key = `${debt.fromId}-${debt.toId}`;
                 const isYouDebtor = debt.fromId === currentUserId;

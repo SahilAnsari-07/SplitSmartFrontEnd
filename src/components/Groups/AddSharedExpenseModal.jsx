@@ -14,6 +14,7 @@ function AddSharedExpenseModal({ group, currentUserId, onAdd, onClose }) {
     group?.members?.map((m) => m.id) || [],
   );
   const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const toggleMember = (id) => {
     setSplitBetweenIds((prev) =>
@@ -23,6 +24,8 @@ function AddSharedExpenseModal({ group, currentUserId, onAdd, onClose }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
+    
     if (!title.trim()) {
       setError("Please enter a title");
       return;
@@ -37,6 +40,7 @@ function AddSharedExpenseModal({ group, currentUserId, onAdd, onClose }) {
       return;
     }
 
+    setIsSubmitting(true);
     try {
       await onAdd({
         title: title.trim(),
@@ -49,6 +53,7 @@ function AddSharedExpenseModal({ group, currentUserId, onAdd, onClose }) {
       onClose();
     } catch {
       setError("Unable to save expense");
+      setIsSubmitting(false);
     }
   };
 
@@ -169,7 +174,7 @@ function AddSharedExpenseModal({ group, currentUserId, onAdd, onClose }) {
                 const selected = splitBetweenIds.includes(m.id);
                 const shareAmt =
                   splitBetweenIds.length > 0 && parseFloat(amount) > 0
-                    ? (parseFloat(amount) / splitBetweenIds.length).toFixed(0)
+                    ? (parseFloat(amount) / splitBetweenIds.length).toFixed(2)
                     : "0";
                 return (
                   <button
@@ -217,7 +222,7 @@ function AddSharedExpenseModal({ group, currentUserId, onAdd, onClose }) {
             </div>
             {parseFloat(amount) > 0 && splitBetweenIds.length > 0 && (
               <p className="text-muted-foreground mt-2 text-xs">
-                ₹{(parseFloat(amount) / splitBetweenIds.length).toFixed(0)} per
+                ₹{(parseFloat(amount) / splitBetweenIds.length).toFixed(2)} per
                 person (equal split)
               </p>
             )}
@@ -239,8 +244,8 @@ function AddSharedExpenseModal({ group, currentUserId, onAdd, onClose }) {
           >
             Cancel
           </Button>
-          <Button type="submit" className="flex-1 py-3">
-            Add Expense
+          <Button type="submit" className="flex-1 py-3" disabled={isSubmitting}>
+            {isSubmitting ? "Saving..." : "Add Expense"}
           </Button>
         </div>
       </form>

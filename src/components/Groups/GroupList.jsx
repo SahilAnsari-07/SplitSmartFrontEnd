@@ -11,6 +11,7 @@ import AddGroupModal from "./AddGroupModal";
 import Button from "../Button";
 import EmptyState from "../EmptyState";
 import Loader from "../Loader";
+import { GroupSkeleton } from "../Skeleton";
 
 function GroupList() {
   const navigate = useNavigate();
@@ -29,7 +30,19 @@ function GroupList() {
   };
 
   if (loading && groups.length === 0) {
-    return <Loader text="Loading groups..." />;
+    return (
+      <div className="p-6 max-w-2xl mx-auto">
+        <div className="flex items-center justify-between mb-6">
+          <div className="animate-pulse bg-muted h-8 w-24 rounded-lg"></div>
+          <div className="animate-pulse bg-muted h-10 w-32 rounded-xl"></div>
+        </div>
+        <div className="space-y-4">
+          <GroupSkeleton />
+          <GroupSkeleton />
+          <GroupSkeleton />
+        </div>
+      </div>
+    );
   }
 
   return (

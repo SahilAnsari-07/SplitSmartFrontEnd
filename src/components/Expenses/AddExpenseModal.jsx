@@ -12,9 +12,12 @@ function AddExpenseModal({ expense, onAdd, onClose }) {
   const [date, setDate] = useState(isEdit ? expense.date : today);
   const [note, setNote] = useState(isEdit ? expense.note || "" : "");
   const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
+
     if (!title.trim()) {
       setError("Please enter a title");
       return;
@@ -25,11 +28,13 @@ function AddExpenseModal({ expense, onAdd, onClose }) {
       return;
     }
 
+    setIsSubmitting(true);
     try {
       await onAdd({ title: title.trim(), amount: amt, category, date, note: note.trim() || undefined });
       onClose();
     } catch {
       setError(isEdit ? "Unable to update expense" : "Unable to save expense");
+      setIsSubmitting(false);
     }
   };
 
@@ -155,8 +160,8 @@ function AddExpenseModal({ expense, onAdd, onClose }) {
           >
             Cancel
           </Button>
-          <Button type="submit" size="md" className="flex-1 py-3">
-            {isEdit ? "Save Changes" : "Add Expense"}
+          <Button type="submit" size="md" className="flex-1 py-3" disabled={isSubmitting}>
+            {isSubmitting ? "Saving..." : (isEdit ? "Save Changes" : "Add Expense")}
           </Button>
         </div>
       </form>

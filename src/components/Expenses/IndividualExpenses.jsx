@@ -16,6 +16,7 @@ import AddExpenseModal from "./AddExpenseModal";
 import Button from "../Button";
 import EmptyState from "../EmptyState";
 import Loader from "../Loader";
+import { ExpenseSkeleton } from "../Skeleton";
 
 function IndividualExpenses() {
   const [showAdd, setShowAdd] = useState(false);
@@ -107,18 +108,40 @@ function IndividualExpenses() {
     createExpense(data);
   };
 
+  const [deletingId, setDeletingId] = useState(null);
+  
   const handleEdit = (data) => {
     if (editingExpense) {
       updateExpense({ id: editingExpense.id, data });
     }
   };
 
-  const handleDelete = (id) => {
-    deleteExpense(id);
+  const handleDelete = async (id) => {
+    setDeletingId(id);
+    try {
+      await deleteExpense(id).unwrap();
+    } catch (e) {
+      console.error("Failed to delete expense", e);
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   if ((isLoading || isFetching) && expenses.length === 0) {
-    return <Loader text="Loading expenses..." />;
+    return (
+      <div className="p-6 max-w-2xl mx-auto">
+        <div className="flex items-center justify-between mb-6">
+          <div className="animate-pulse bg-muted h-8 w-32 rounded-lg"></div>
+          <div className="animate-pulse bg-muted h-10 w-32 rounded-xl"></div>
+        </div>
+        <div className="space-y-4">
+          <ExpenseSkeleton />
+          <ExpenseSkeleton />
+          <ExpenseSkeleton />
+          <ExpenseSkeleton />
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -271,13 +294,17 @@ function IndividualExpenses() {
                         >
                           <Pencil className="h-3.5 w-3.5" />
                         </button>
-                        {/* Delete button */}
                         <button
                           onClick={() => handleDelete(expense.id)}
                           className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground opacity-100 sm:opacity-0 transition-all hover:bg-red-50 hover:text-red-500 sm:group-hover:opacity-100"
                           id={`delete-expense-${expense.id}`}
+                          disabled={deletingId === expense.id}
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
+                          {deletingId === expense.id ? (
+                            <div className="w-3.5 h-3.5 border-2 border-muted-foreground border-t-red-500 rounded-full animate-spin" />
+                          ) : (
+                            <Trash2 className="h-3.5 w-3.5" />
+                          )}
                         </button>
                       </div>
                     </div>

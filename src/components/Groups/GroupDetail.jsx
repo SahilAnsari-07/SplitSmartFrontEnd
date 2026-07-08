@@ -34,6 +34,7 @@ import Button from "../Button";
 import Card from "../Card";
 import EmptyState from "../EmptyState";
 import Loader from "../Loader";
+import { Skeleton, ExpenseSkeleton } from "../Skeleton";
 
 function GroupDetail() {
   const { groupId } = useParams();
@@ -179,8 +180,15 @@ function GroupDetail() {
     await createSharedExpense({ groupId, body: data }).unwrap();
   };
 
+  const [deletingId, setDeletingId] = useState(null);
+
   const handleDeleteExpense = async (expenseId) => {
-    await deleteSharedExpense({ groupId, expenseId }).unwrap();
+    setDeletingId(expenseId);
+    try {
+      await deleteSharedExpense({ groupId, expenseId }).unwrap();
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const handleLinkUser = (memberId) => {
@@ -225,7 +233,32 @@ function GroupDetail() {
   };
 
   if ((isLoading || isFetching) && !group) {
-    return <Loader text="Loading group..." />;
+    return (
+      <div className="min-h-screen bg-background pb-20">
+        <div className="bg-primary pt-12 pb-24 px-6 relative">
+          <div className="animate-pulse bg-white/20 h-6 w-8 rounded-lg mb-6"></div>
+          <div className="flex items-center gap-4">
+            <div className="animate-pulse bg-white/20 w-16 h-16 rounded-2xl"></div>
+            <div className="space-y-2">
+              <div className="animate-pulse bg-white/20 h-8 w-48 rounded-lg"></div>
+              <div className="animate-pulse bg-white/20 h-4 w-32 rounded-lg"></div>
+            </div>
+          </div>
+        </div>
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 -mt-16 relative z-10">
+          <div className="bg-card rounded-2xl sm:rounded-3xl shadow-xl border border-border p-4 mb-6">
+            <div className="flex gap-2">
+              <div className="animate-pulse bg-muted h-10 flex-1 rounded-xl"></div>
+              <div className="animate-pulse bg-muted h-10 flex-1 rounded-xl"></div>
+            </div>
+          </div>
+          <div className="space-y-4">
+            <ExpenseSkeleton />
+            <ExpenseSkeleton />
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (!group) {
@@ -453,8 +486,13 @@ function GroupDetail() {
                                 <button
                                   onClick={() => handleDeleteExpense(expense.id)}
                                   className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-50 text-muted-foreground hover:text-red-500 transition-all shrink-0"
+                                  disabled={deletingId === expense.id}
                                 >
-                                  <Trash2 className="w-3.5 h-3.5" />
+                                  {deletingId === expense.id ? (
+                                    <div className="w-3.5 h-3.5 border-2 border-muted-foreground border-t-red-500 rounded-full animate-spin" />
+                                  ) : (
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  )}
                                 </button>
                               </div>
                             </div>

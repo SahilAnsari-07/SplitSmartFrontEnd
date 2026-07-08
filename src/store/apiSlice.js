@@ -15,7 +15,7 @@ const baseQuery = fetchBaseQuery({
 const baseQueryWithAuthRedirect = async (args, api, extraOptions) => {
   const result = await baseQuery(args, api, extraOptions);
 
-  if (result.error?.status === 401) {
+  if (result.error?.status === 401 || result.error?.status === 403) {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     if (typeof window !== "undefined") {
